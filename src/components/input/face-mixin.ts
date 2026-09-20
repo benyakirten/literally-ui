@@ -1,5 +1,5 @@
-import { LitElement, type PropertyValues } from "lit";
-import { LUElement } from "../base";
+import { LitElement, type PropertyValues } from 'lit';
+import { LUElement } from '../base';
 
 type Constructor<T = {}> = new (...args: any[]) => T;
 type FormableValue = string | File | FormData | null;
@@ -82,7 +82,7 @@ function CreateFaceMixin<V extends FormableValue>() {
       }
 
       protected setFormValue(value: V, state?: V): void {
-        this._internals.setFormValue(value, state);
+        this._internals.setFormValue(value || null, state);
       }
 
       formAssociatedCallback(_form: HTMLFormElement | null): void {}
@@ -97,7 +97,7 @@ function CreateFaceMixin<V extends FormableValue>() {
 
       formStateRestoreCallback(
         state: V,
-        _reason: "restore" | "autocomplete",
+        _reason: 'restore' | 'autocomplete',
       ): void {
         if (state !== null) {
           this.value = state;
@@ -106,7 +106,7 @@ function CreateFaceMixin<V extends FormableValue>() {
 
       protected updated(changedProperties: PropertyValues<this>): void {
         super.updated(changedProperties);
-        if (changedProperties.has("value")) {
+        if (changedProperties.has('value')) {
           this.setFormValue(this.value);
         }
       }

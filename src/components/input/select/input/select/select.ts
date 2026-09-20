@@ -1,4 +1,4 @@
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { html } from 'lit';
 
 import { LUFaceElement } from '../../../face-mixin';
@@ -10,26 +10,50 @@ export class LUSelect extends LUFaceElement() {
     return styles;
   }
 
-  @property({ type: Boolean, reflect: true })
-  open: boolean = false;
+  @property({ type: Boolean, reflect: true }) open: boolean = false;
 
-  private _popupId = '';
-  private _popupRole: 'listbox' | 'tree' = 'tree';
+  @property({ type: String, reflect: true }) value: string = '';
+
+  @state() private _popupId = '';
+  @state() private _popupRole: 'listbox' | 'tree' = 'tree';
+
+  private _numOptions: number = 0;
 
   private _handleSlotChange(e: Event & { target: HTMLSlotElement }) {
     const { target } = e;
-    const role = target.getAttribute('role');
+    const slotChildren = target.assignedElements();
+    if (slotChildren.length !== 1) {
+      throw new Error('LU Select should only have one popup child');
+    }
+
+    const popup = slotChildren[0];
+    const role = popup.getAttribute('role');
+
     if (role !== 'listbox' && role !== 'tree') {
       throw new Error('LU Select only supports listbox and tree role');
     }
 
-    // TODO: Investigate and maybe switch to context
     this._popupRole = role;
-    this._popupId = target.id;
+    this._popupId = popup.id;
   }
 
-  private _handleKeydown(_e: KeyboardEvent) {
-    //
+  setOpen(open: boolean) {
+    this.open = open;
+  }
+
+  private _handleKeydown(e: KeyboardEvent) {
+    switch (e.key) {
+      case 'DownArrow':
+      case 'UpArrow':
+      case 'Enter':
+        this.setOpen(true);
+      default:
+        return;
+    }
+  }
+
+  private _handleSelect(e: KeyboardEvent) {
+    e.stopPropagation();
   }
 
   render() {
@@ -45,6 +69,7 @@ export class LUSelect extends LUFaceElement() {
       <slot
         name="option-container"
         @slotchange=${this._handleSlotChange}
+        @lu:select=${this._handleSelect}
       ></slot> `;
   }
 }
