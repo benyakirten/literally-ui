@@ -21,4 +21,33 @@
       },
     },
   },
+  "languages": {
+    "JavaScript": {
+      "language_servers": ["oxc", "..."],
+      "formatter": {
+        "language_server": {
+          "name": "oxfmt",
+        },
+      },
+      "format_on_save": "on",
+    },
+    "TypeScript": {
+      "language_servers": ["oxc", "..."],
+      "formatter": {
+        "language_server": {
+          "name": "oxfmt",
+        },
+      },
+      "format_on_save": "on",
+    },
+    "TSX": {
+      "language_servers": ["oxc", "..."],
+      "formatter": {
+        "language_server": {
+          "name": "oxfmt",
+        },
+      },
+      "format_on_save": "on",
+    },
+  },
 }
