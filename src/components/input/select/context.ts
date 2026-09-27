@@ -1,5 +1,5 @@
 import { createContext, provide } from '@lit/context';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { LUElement } from '../../base';
 
 type SelectListboxRole = 'listbox' | 'tree';
@@ -16,6 +16,7 @@ export type SelectContext = {
   popupId: string;
   popupRole: SelectListboxRole;
   registerPopup: (val: HTMLElement) => void;
+  registerOption: (o: SelectOption) => void;
   registerOptions: (opts: SelectOption[]) => void;
   highlight: (idx: string) => void;
   select: (value: string) => void;
@@ -30,11 +31,18 @@ export type SelectOption = HTMLElement & {
   getValue: () => string;
 };
 
+type ValidationLevel = 'lax' | 'log' | 'error';
+
 /**
  * This is a context that should wrap every select (input, popup and options).
  */
 @customElement('lu-select-context')
 export class LUSelectContext extends LUElement {
+  /**
+   * Validation level of the
+   */
+  @property({ type: String }) validation: ValidationLevel = 'log';
+
   @state() private _isOpen = false;
   @state() private _popupId = '';
   @state() private _popupRole: 'listbox' | 'tree' = 'listbox';
@@ -51,6 +59,7 @@ export class LUSelectContext extends LUElement {
     popupId: this._popupId,
     popupRole: this._popupRole,
     registerPopup: (el: HTMLElement) => this._handleRegisterPopup(el),
+    registerOption: (o: SelectOption) => this._handleRegisterOption(o),
     registerOptions: (opts: SelectOption[]) =>
       this._handleRegisterOptions(opts),
     highlight: (value: string) => this._handleHighlight(value),
@@ -59,7 +68,42 @@ export class LUSelectContext extends LUElement {
   };
 
   private _handleRegisterOptions(opts: SelectOption[]) {
+    if (this.validation !== 'lax') {
+      const seen = new Set<string>();
+      const duplicated: string[] = [];
+      for (const opt of opts) {
+        if (seen.has(opt.getValue())) {
+          if (this.validation === 'error') {
+            throw Error(
+              `Cannot register ${opt.getValue()}; already exists as option`,
+            );
+          } else {
+            duplicated.push(opt.getValue());
+          }
+        }
+
+        this.logger.warn(
+          `${duplicated.length} options with identical values detected: ${duplicated}`,
+        );
+      }
+    }
+
     this._options = opts;
+  }
+
+  private _handleRegisterOption(o: SelectOption) {
+    if (this.validation !== 'lax') {
+      if (this._options.some((opt) => opt.getValue === o.getValue)) {
+        if (this.validation === 'log') {
+          this.logger.warn(`${o.getValue()}; already exists as option`, o);
+        } else {
+          throw Error(
+            `Cannot register ${o.getValue()}; already exists as option`,
+          );
+        }
+      }
+    }
+    this._options.push(o);
   }
 
   private _isOption(value: string): boolean {
