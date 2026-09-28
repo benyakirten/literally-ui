@@ -1,6 +1,6 @@
 import { createContext, provide } from '@lit/context';
 import { customElement, property, state } from 'lit/decorators.js';
-import { LUElement } from '../../base';
+import { LUElement, type Logger } from '../../base';
 
 type SelectListboxRole = 'listbox' | 'tree';
 
@@ -9,16 +9,17 @@ type SelectListboxRole = 'listbox' | 'tree';
 // But if we use individual listeners and particular behavior
 // is a context a good way to handle state management?
 export type SelectContext = {
-  options: HTMLElement[];
+  options: SelectOption[];
   open: boolean;
   value: string;
   highlighted: string;
   popupId: string;
   popupRole: SelectListboxRole;
+  logger: Logger;
   registerPopup: (val: HTMLElement) => void;
   registerOption: (o: SelectOption) => void;
   registerOptions: (opts: SelectOption[]) => void;
-  highlight: (idx: string) => void;
+  highlight: (val: string) => void;
   select: (value: string) => void;
   setOpen: (state: boolean) => void;
 };
@@ -29,6 +30,7 @@ export const selectContext = createContext<SelectContext>(
 
 export type SelectOption = HTMLElement & {
   getValue: () => string;
+  getDisplayValue: () => string;
 };
 
 type ValidationLevel = 'lax' | 'log' | 'error';
@@ -58,6 +60,7 @@ export class LUSelectContext extends LUElement {
     highlighted: this._highlighted,
     popupId: this._popupId,
     popupRole: this._popupRole,
+    logger: this.logger,
     registerPopup: (el: HTMLElement) => this._handleRegisterPopup(el),
     registerOption: (o: SelectOption) => this._handleRegisterOption(o),
     registerOptions: (opts: SelectOption[]) =>
