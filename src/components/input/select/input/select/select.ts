@@ -13,13 +13,19 @@ export class LUSelect extends LUFaceElement() {
     return styles;
   }
 
-  @consume({ context: selectContext }) private _ctx!: SelectContext;
+  @consume({ context: selectContext, subscribe: true })
+  private _ctx!: SelectContext;
 
   @property({ type: Boolean, reflect: true }) open: boolean = false;
   @property({ type: String, reflect: true }) value: string = '';
+  @property({ type: Boolean, reflect: true }) multi: boolean = false;
 
-  private _highlightFirst() {
-    const opt = this._ctx.options.at(0);
+  connectedCallback() {
+    this._ctx.registerInput(this);
+  }
+
+  private _highlightIndex(idx: number) {
+    const opt = this._ctx.options.at(idx);
     if (!opt) {
       return;
     }
@@ -40,7 +46,7 @@ export class LUSelect extends LUFaceElement() {
       case 'Home':
       case 'End':
         this._ctx.setOpen(true);
-        this._highlightFirst();
+        this._highlightIndex(0);
         break;
       default:
         return;

@@ -1,6 +1,7 @@
 import { createContext, provide } from '@lit/context';
 import { customElement, property, state } from 'lit/decorators.js';
 import { LUElement, type Logger } from '../../base';
+import type { FaceMixinInterface } from '../face-mixin';
 
 type SelectListboxRole = 'listbox' | 'tree';
 
@@ -11,11 +12,13 @@ type SelectListboxRole = 'listbox' | 'tree';
 export type SelectContext = {
   options: SelectOption[];
   open: boolean;
-  value: string;
+  value: Set<string>;
   highlighted: string;
   popupId: string;
   popupRole: SelectListboxRole;
   logger: Logger;
+  multi: boolean;
+  registerInput: (val: SelectInput) => void;
   registerPopup: (val: HTMLElement) => void;
   registerOption: (o: SelectOption) => void;
   registerOptions: (opts: SelectOption[]) => void;
@@ -33,6 +36,10 @@ export type SelectOption = HTMLElement & {
   getDisplayValue: () => string;
 };
 
+export type SelectInput = FaceMixinInterface & {
+  multi: boolean;
+};
+
 type ValidationLevel = 'lax' | 'log' | 'error';
 
 /**
@@ -48,11 +55,13 @@ export class LUSelectContext extends LUElement {
   @state() private _isOpen = false;
   @state() private _popupId = '';
   @state() private _popupRole: 'listbox' | 'tree' = 'listbox';
-  @state() private _value = '';
+  @state() private _value = new Set<string>();
   @state() private _highlighted: string = '';
   @state() private _options: SelectOption[] = [];
+  @state() private _multi: boolean = false;
 
   @provide({ context: selectContext })
+  @state()
   contextValue: SelectContext = {
     options: this._options,
     open: this._isOpen,
@@ -61,6 +70,8 @@ export class LUSelectContext extends LUElement {
     popupId: this._popupId,
     popupRole: this._popupRole,
     logger: this.logger,
+    multi: this._multi,
+    registerInput: (el: SelectInput) => this._handleRegisterInput(el),
     registerPopup: (el: HTMLElement) => this._handleRegisterPopup(el),
     registerOption: (o: SelectOption) => this._handleRegisterOption(o),
     registerOptions: (opts: SelectOption[]) =>
@@ -69,6 +80,10 @@ export class LUSelectContext extends LUElement {
     select: (value: string) => this._handleSelectOption(value),
     setOpen: (state: boolean) => this._setOpen(state),
   };
+
+  private _handleRegisterInput(el: SelectInput) {
+    this._multi = el.multi;
+  }
 
   private _handleRegisterOptions(opts: SelectOption[]) {
     if (this.validation !== 'lax') {
@@ -118,7 +133,12 @@ export class LUSelectContext extends LUElement {
       return;
     }
 
-    this._value = value;
+    if (this._multi && this._value.has(value)) {
+      this._value.delete(value);
+      return;
+    }
+
+    this._value.add(value);
   }
 
   private _setOpen(state: boolean) {

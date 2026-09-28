@@ -5,7 +5,8 @@ import { consume } from '@lit/context';
 
 @customElement('lu-listbox')
 export class LUListbox extends LitElement {
-  @consume({ context: selectContext }) private _ctx!: SelectContext;
+  @consume({ context: selectContext, subscribe: true })
+  private _ctx!: SelectContext;
 
   @property({ type: String }) id = crypto.randomUUID();
 
