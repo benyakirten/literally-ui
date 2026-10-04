@@ -6,7 +6,10 @@ import '../../option/option';
 import '../../popup/listbox';
 import '../../context';
 
-const Meta: Meta = {};
+const meta: Meta = {
+  title: 'Select',
+  component: 'lu-select',
+};
 
 export const Default: StoryObj = {
   render: () => {
@@ -20,3 +23,5 @@ export const Default: StoryObj = {
     </lu-select-context>`;
   },
 };
+
+export default meta;
