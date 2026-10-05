@@ -19,8 +19,9 @@ export function normalizeArray<T>(
 
   const toAttribute = (v: T[]) => v.join(',');
   const fromAttribute = (v: string) => {
-    const normalized = v.replace(/^\[|\{/, '').replace(/\]|\}$/, '');
+    const normalized = v.replace(/^\[|\{/, '').replace(/[}\]]$/, '');
     try {
+      console.log('normalzied', normalized);
       const vals = parser(`[${normalized}]`);
       if (!validator(vals)) {
         throw new Error();
