@@ -1,5 +1,5 @@
 import { consume } from '@lit/context';
-import { html, LitElement, type PropertyValues } from 'lit';
+import { html, LitElement, nothing, type PropertyValues } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import {
   selectContext,
@@ -7,6 +7,7 @@ import {
   type SelectOption,
 } from '../context';
 import styles from './option.styles.ts';
+import { when } from 'lit/directives/when.js';
 
 /** An option in a sibling lu-select-listbox. Values must be unique per context. */
 @customElement('lu-select-option')
@@ -19,6 +20,10 @@ export class LUSelectOption extends LitElement implements SelectOption {
   @property({ type: String, attribute: 'display-value' }) displayValue = '';
   @property({ type: Boolean, reflect: true }) disabled = false;
   private _registered?: SelectContext;
+
+  get selected() {
+    return this._ctx?.values.includes(this.value);
+  }
 
   connectedCallback() {
     super.connectedCallback();
@@ -41,14 +46,11 @@ export class LUSelectOption extends LitElement implements SelectOption {
       this._ctx?.registerOption(this);
     }
     this.setAttribute('aria-disabled', String(this.disabled));
-    this.setAttribute(
-      'aria-selected',
-      String(this._ctx?.values.includes(this.value) ?? false),
-    );
-    this.toggleAttribute(
-      'data-selected',
-      this._ctx?.values.includes(this.value) ?? false,
-    );
+
+    if (changed.has('selected')) {
+      this.setAttribute('aria-selected', String(this.selected ?? false));
+      this.toggleAttribute('data-selected', this.selected ?? false);
+    }
     this.toggleAttribute('data-active', this._ctx?.activeId === this.id);
     this.tabIndex = -1;
   }
@@ -80,7 +82,14 @@ export class LUSelectOption extends LitElement implements SelectOption {
 
   render() {
     return html`<slot
-      @slotchange=${() => this._ctx?.registerOption(this)}
-    ></slot>`;
+        @slotchange=${() => this._ctx?.registerOption(this)}
+      ></slot>
+      <div>
+        ${when(
+          this.selected,
+          () => html`&check;`,
+          () => nothing,
+        )}
+      </div>`;
   }
 }

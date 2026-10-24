@@ -46,7 +46,7 @@ test('multiple select toggles options and submits repeated form entries', async 
   await expect(input.locator('[part="chip"]')).toHaveCount(2);
   const submitted = await page
     .locator('form')
-    .evaluate((form) => new FormData(form).getAll('fruit'));
+    .evaluate((form) => new FormData(form as HTMLFormElement).getAll('fruit'));
   expect(submitted).toEqual(['apple', 'pear']);
 });
 
