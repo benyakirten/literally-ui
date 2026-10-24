@@ -50,7 +50,8 @@ export class LUSelectCombobox extends LUFaceElement() {
   connectedCallback() {
     super.connectedCallback();
     this.id ||= `lu-combobox-${crypto.randomUUID()}`;
-    this.tabIndex = -1;
+    this.tabIndex = this.disabled ? -1 : 0;
+    this.addEventListener('focus', this._redirectHostFocus);
     this._ensureNativeInput();
   }
 
@@ -104,10 +105,17 @@ export class LUSelectCombobox extends LUFaceElement() {
     this.setAttribute('aria-disabled', String(this._isDisabled));
     this.setAttribute('aria-invalid', String(!this.validity.valid));
     this.setAttribute('aria-required', String(this.required));
+    this.tabIndex = this._isDisabled ? -1 : 0;
     this._syncNativeInput();
     this._filterOptions();
     this._updateFormValue();
   }
+
+  private _redirectHostFocus = (event: FocusEvent) => {
+    if (!this._isDisabled && event.composedPath()[0] === this) {
+      this._nativeInput?.focus();
+    }
+  };
 
   private get _isDisabled() {
     return this.disabled || this._fieldsetDisabled;
@@ -129,6 +137,7 @@ export class LUSelectCombobox extends LUFaceElement() {
     if (this._nativeInput) return;
     const input = document.createElement('input');
     input.type = 'text';
+    input.tabIndex = 0;
     input.slot = 'input';
     input.setAttribute('autocomplete', this.autocomplete);
     input.placeholder = this.placeholder;
@@ -137,7 +146,7 @@ export class LUSelectCombobox extends LUFaceElement() {
     input.setAttribute('aria-autocomplete', 'list');
     input.setAttribute('aria-haspopup', 'listbox');
     input.addEventListener('input', this._onInput);
-    input.addEventListener('keydown', this._onKeydown);
+    input.addEventListener('keydown', (event) => this._onInputKeydown(event));
     input.addEventListener('click', this._onInputClick);
     this._nativeInput = input;
     this.append(input);
@@ -429,14 +438,76 @@ export class LUSelectCombobox extends LUFaceElement() {
     }
   };
 
-  private _removeChip(event: MouseEvent, value: string) {
+  private _chipButtons() {
+    return Array.from(
+      this.renderRoot.querySelectorAll<HTMLButtonElement>(
+        '[part="chip-remove"]',
+      ),
+    );
+  }
+
+  private _onChipKeydown(event: KeyboardEvent, value: string) {
+    const buttons = this._chipButtons();
+    const current = buttons.indexOf(event.currentTarget as HTMLButtonElement);
+
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      buttons[Math.max(0, current - 1)]?.focus();
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      if (current === buttons.length - 1) this._nativeInput?.focus();
+      else buttons[current + 1]?.focus();
+    } else if (event.key === 'Backspace' || event.key === 'Delete') {
+      event.preventDefault();
+      this._removeChip(event, value);
+    } else if (
+      event.key.length === 1 &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey
+    ) {
+      event.preventDefault();
+      this._nativeInput?.focus();
+      const input = this._nativeInput;
+      if (!input) return;
+      const start = input.selectionStart ?? input.value.length;
+      const end = input.selectionEnd ?? start;
+      input.setRangeText(event.key, start, end, 'end');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+
+  private _removeChip(event: Event, value: string) {
     event.stopPropagation();
     if (this._isDisabled) return;
-    this._writeValues(
-      this._values.filter((item) => item !== value),
-      true,
-    );
-    this._nativeInput?.focus();
+    const buttons = this._chipButtons();
+    const current = buttons.indexOf(event.currentTarget as HTMLButtonElement);
+    const nextValues = this._values.filter((item) => item !== value);
+    this._writeValues(nextValues, true);
+    void this.updateComplete.then(() => {
+      if (nextValues.length) {
+        this._chipButtons()[Math.min(current, nextValues.length - 1)]?.focus();
+      } else {
+        this._nativeInput?.focus();
+      }
+    });
+  }
+
+  private _onInputKeydown(event: KeyboardEvent) {
+    if (
+      this.multi &&
+      event.key === 'ArrowLeft' &&
+      this._values.length > 0 &&
+      (!this._nativeInput?.value ||
+        (this._nativeInput.selectionStart === 0 &&
+          this._nativeInput.selectionEnd === 0))
+    ) {
+      event.preventDefault();
+      const buttons = this._chipButtons();
+      buttons[buttons.length - 1]?.focus();
+      return;
+    }
+    this._onKeydown(event);
   }
 
   private _updateFormValue() {
@@ -521,6 +592,7 @@ export class LUSelectCombobox extends LUFaceElement() {
   disconnectedCallback() {
     this._registered?.unregisterInput(this);
     this._registered = undefined;
+    this.removeEventListener('focus', this._redirectHostFocus);
 
     super.disconnectedCallback();
   }
@@ -537,6 +609,7 @@ export class LUSelectCombobox extends LUFaceElement() {
                     part="chip-remove"
                     aria-label=${`Remove ${option.getDisplayValue()}`}
                     @click=${(event: MouseEvent) => this._removeChip(event, option.value)}
+                    @keydown=${(event: KeyboardEvent) => this._onChipKeydown(event, option.value)}
                   >
                     ×
                   </button>

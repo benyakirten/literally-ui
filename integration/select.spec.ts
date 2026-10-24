@@ -179,6 +179,8 @@ test('searchable multi combobox filters and toggles values without closing', asy
   const control = page.locator('lu-select-combobox');
   const input = control.locator('input[slot="input"]');
   await expect(page.getByRole('combobox', { name: 'Fruits' })).toBeVisible();
+  await page.keyboard.press('Tab');
+  await expect(input).toBeFocused();
   await input.fill('pe');
   await expect(page.locator('lu-select-option:not([hidden])')).toHaveCount(1);
   await input.press('Enter');
@@ -190,10 +192,32 @@ test('searchable multi combobox filters and toggles values without closing', asy
   await input.press('Enter');
   await expect(control).toHaveJSProperty('values', ['pear', 'plum']);
   await expect(control.locator('[part="chip"]')).toHaveCount(2);
+
+  await input.press('ArrowLeft');
+  const removeButtons = control.locator('[part="chip-remove"]');
+  await expect(removeButtons.nth(1)).toBeFocused();
+  await page.keyboard.press('ArrowLeft');
+  await expect(removeButtons.nth(0)).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect(removeButtons.nth(1)).toBeFocused();
+  await page.keyboard.press('ArrowRight');
+  await expect(input).toBeFocused();
+
+  await input.press('ArrowLeft');
+  await expect(removeButtons.nth(1)).toBeFocused();
+  await page.keyboard.press('Backspace');
+  await expect(control).toHaveJSProperty('values', ['pear']);
+  await expect(removeButtons).toHaveCount(1);
+  await expect(removeButtons).toBeFocused();
+  await page.keyboard.type('p');
+  await expect(input).toBeFocused();
+  await expect(input).toHaveValue('p');
+  await expect(page.locator('lu-select-option:not([hidden])')).toHaveCount(3);
+
   const submitted = await page
     .locator('form')
     .evaluate((form) => new FormData(form as HTMLFormElement).getAll('fruit'));
-  expect(submitted).toEqual(['pear', 'plum']);
+  expect(submitted).toEqual(['pear']);
   await expect(page.locator('lu-select-listbox:popover-open')).toBeVisible();
 });
 
