@@ -47,10 +47,8 @@ export class LUSelectOption extends LitElement implements SelectOption {
     }
     this.setAttribute('aria-disabled', String(this.disabled));
 
-    if (changed.has('selected')) {
-      this.setAttribute('aria-selected', String(this.selected ?? false));
-      this.toggleAttribute('data-selected', this.selected ?? false);
-    }
+    this.setAttribute('aria-selected', String(this.selected ?? false));
+    this.toggleAttribute('data-selected', this.selected ?? false);
     this.toggleAttribute('data-active', this._ctx?.activeId === this.id);
     this.tabIndex = -1;
   }

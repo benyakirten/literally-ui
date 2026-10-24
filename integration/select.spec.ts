@@ -65,6 +65,9 @@ for (const openKey of ['Enter', 'Space', 'ArrowDown']) {
       await expect(listbox).toBeFocused();
       await page.keyboard.press(selectKey);
       await expect(input).toHaveJSProperty('values', ['apple']);
+      await expect(
+        page.locator('lu-select-option[value="apple"]'),
+      ).toHaveAttribute('aria-selected', 'true');
       await expect(input.locator('[part="chip"]')).toHaveCount(1);
       await expect(
         page.locator('lu-select-listbox:popover-open'),
@@ -73,12 +76,18 @@ for (const openKey of ['Enter', 'Space', 'ArrowDown']) {
       await page.keyboard.press('ArrowDown');
       await page.keyboard.press(selectKey);
       await expect(input).toHaveJSProperty('values', ['apple', 'pear']);
+      await expect(
+        page.locator('lu-select-option[value="pear"]'),
+      ).toHaveAttribute('aria-selected', 'true');
       await expect(input.locator('[part="chip"]')).toHaveCount(2);
       await expect(
         page.locator('lu-select-listbox:popover-open'),
       ).toBeVisible();
       await page.keyboard.press(selectKey);
       await expect(input).toHaveJSProperty('values', ['apple']);
+      await expect(
+        page.locator('lu-select-option[value="pear"]'),
+      ).toHaveAttribute('aria-selected', 'false');
       await expect(listbox).toBeFocused();
       await page.keyboard.press('Escape');
       await expect(input).toBeFocused();
@@ -96,6 +105,7 @@ test('multiple select toggles options by pointer without closing', async ({
   const apple = page.locator('lu-select-option[value="apple"]');
   const pear = page.locator('lu-select-option[value="pear"]');
   await apple.click();
+
   await expect(apple).toHaveAttribute('aria-selected', 'true');
   await expect(input).toHaveAttribute('aria-expanded', 'true');
   await pear.click();
