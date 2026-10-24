@@ -48,16 +48,22 @@ export class LUSelectInput extends LUFaceElement() {
 
   protected firstUpdated() {
     this._defaultValues = this._initialValues();
+    this.setAttribute('aria-haspopup', 'listbox');
     this._register();
     this._syncSelection();
   }
 
   protected updated(changed: PropertyValues<this>) {
     super.updated(changed);
-    this.setAttribute('role', this.multi ? 'button' : 'combobox');
-    this.setAttribute('aria-haspopup', 'listbox');
+
+    if (changed.has('multi')) {
+      this.setAttribute('role', this.multi ? 'button' : 'combobox');
+    }
+
     this.setAttribute('aria-expanded', String(this._ctx?.open ?? false));
+
     this._syncAccessibleName();
+
     if (this._ctx?.popupId)
       this.setAttribute('aria-controls', this._ctx.popupId);
     else this.removeAttribute('aria-controls');
@@ -198,18 +204,16 @@ export class LUSelectInput extends LUFaceElement() {
   private _syncAccessibleName() {
     if (this.hasAttribute('aria-label') || this.hasAttribute('aria-labelledby'))
       return;
+
     const labels = Array.from(
       this.internals.labels,
       (label) => label as HTMLLabelElement,
-    );
-    if (!labels.length) return;
-    for (const label of labels) {
-      if (!label.id) label.id = `lu-select-label-${crypto.randomUUID()}`;
+    ).map((l) => l.id || `lu-select-label-${crypto.randomUUID()}`);
+    if (!labels.length) {
+      return;
     }
-    this.setAttribute(
-      'aria-labelledby',
-      labels.map((label) => label.id).join(' '),
-    );
+
+    this.setAttribute('aria-labelledby', labels.join(' '));
   }
 
   private _updateValidity() {
