@@ -2,6 +2,7 @@ import { html } from 'lit';
 import type { Meta, StoryObj } from '@storybook/web-components-vite';
 
 import './select';
+import '../combobox/combobox';
 import '../../option/option';
 import '../../popup/listbox';
 import '../../context';
@@ -41,6 +42,45 @@ export const Multiple: StoryObj = {
         <lu-select-option value="apple">Apple</lu-select-option>
         <lu-select-option value="pear">Pear</lu-select-option>
         <lu-select-option value="plum">Plum</lu-select-option>
+      </lu-select-listbox>
+    </lu-select-context>
+  </form>`,
+};
+
+export const SearchableSingle: StoryObj = {
+  render: () => html`<form>
+    <lu-select-context>
+      <label for="searchable-city">City</label>
+      <lu-select-combobox
+        id="searchable-city"
+        name="city"
+        placeholder="Search cities…"
+      ></lu-select-combobox>
+      <lu-select-listbox>
+        <lu-select-option value="nyc">New York City</lu-select-option>
+        <lu-select-option value="york">York</lu-select-option>
+        <lu-select-option value="london">London</lu-select-option>
+        <lu-select-option value="new-delhi">New Delhi</lu-select-option>
+      </lu-select-listbox>
+    </lu-select-context>
+  </form>`,
+};
+
+export const SearchableMultiple: StoryObj = {
+  render: () => html`<form>
+    <lu-select-context>
+      <label for="searchable-fruit">Fruits</label>
+      <lu-select-combobox
+        id="searchable-fruit"
+        name="fruit"
+        placeholder="Search fruits…"
+        multi
+      ></lu-select-combobox>
+      <lu-select-listbox>
+        <lu-select-option value="apple">Apple</lu-select-option>
+        <lu-select-option value="pear">Pear</lu-select-option>
+        <lu-select-option value="plum">Plum</lu-select-option>
+        <lu-select-option value="orange">Orange</lu-select-option>
       </lu-select-listbox>
     </lu-select-context>
   </form>`,

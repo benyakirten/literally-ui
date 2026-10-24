@@ -19,11 +19,23 @@ export interface SelectSnapshot {
   multi: boolean;
   activeId: string | null;
   popupId: string | null;
-  input: HTMLElement | null;
+  input:
+    | (HTMLElement & {
+        multi?: boolean;
+        searchable?: boolean;
+        focusTarget?: HTMLElement;
+      })
+    | null;
 }
 
 export interface SelectContext extends SelectSnapshot {
-  registerInput(input: HTMLElement & { multi: boolean }): void;
+  registerInput(
+    input: HTMLElement & {
+      multi: boolean;
+      searchable?: boolean;
+      focusTarget?: HTMLElement;
+    },
+  ): void;
   unregisterInput(input: HTMLElement): void;
   registerPopup(popup: HTMLElement): void;
   unregisterPopup(popup: HTMLElement): void;
@@ -51,7 +63,13 @@ export class LUSelectContext extends LUElement {
   @state() private _multi = false;
   @state() private _activeId: string | null = null;
   @state() private _popupId: string | null = null;
-  private _input: HTMLElement | null = null;
+  private _input:
+    | (HTMLElement & {
+        multi?: boolean;
+        searchable?: boolean;
+        focusTarget?: HTMLElement;
+      })
+    | null = null;
   private _popup: HTMLElement | null = null;
 
   @provide({ context: selectContext })
@@ -99,7 +117,13 @@ export class LUSelectContext extends LUElement {
     return element.getRootNode() === this.getRootNode();
   }
 
-  private _registerInput(input: HTMLElement & { multi: boolean }) {
+  private _registerInput(
+    input: HTMLElement & {
+      multi: boolean;
+      searchable?: boolean;
+      focusTarget?: HTMLElement;
+    },
+  ) {
     if (!this._sameTree(input)) {
       this._diagnose(
         'Select input must share a DOM tree with its context',

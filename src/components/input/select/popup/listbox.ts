@@ -69,7 +69,9 @@ export class LUSelectListbox extends LitElement {
       ),
     );
     const activeId =
-      this._ctx?.multi && this._ctx.open ? this._ctx.activeId : null;
+      !this._ctx?.input?.searchable && this._ctx?.multi && this._ctx.open
+        ? this._ctx.activeId
+        : null;
     if (activeId) this.setAttribute('aria-activedescendant', activeId);
     else this.removeAttribute('aria-activedescendant');
     this.tabIndex = -1;
@@ -108,7 +110,10 @@ export class LUSelectListbox extends LitElement {
     if (!this._ctx?.open) return;
     const input = this._input();
     if (!input) return;
-    const rect = input.getBoundingClientRect();
+    const anchor =
+      (input as HTMLElement & { focusTarget?: HTMLElement }).focusTarget ??
+      input;
+    const rect = anchor.getBoundingClientRect();
     const below = innerHeight - rect.bottom;
     const above = rect.top;
     const placeAbove = below < 180 && above > below;

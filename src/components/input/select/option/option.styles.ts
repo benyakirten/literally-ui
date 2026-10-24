@@ -16,6 +16,9 @@ export default css`
     background: Highlight;
     color: HighlightText;
   }
+  :host([hidden]) {
+    display: none !important;
+  }
   :host([aria-disabled='true']) {
     opacity: 0.55;
   }

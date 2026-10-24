@@ -3,6 +3,9 @@ import { expect, test } from '@playwright/test';
 const stories = {
   single: '/iframe.html?id=select--default&viewMode=story',
   multiple: '/iframe.html?id=select--multiple&viewMode=story',
+  searchableSingle: '/iframe.html?id=select--searchable-single&viewMode=story',
+  searchableMultiple:
+    '/iframe.html?id=select--searchable-multiple&viewMode=story',
 };
 
 test('single select exposes combobox semantics and commits only on confirmation', async ({
@@ -145,6 +148,53 @@ test('multiple story adds all options through the Storybook canvas', async ({
     ).toBeVisible();
   }
   await page.screenshot({ path: testInfo.outputPath('multiple-selected.png') });
+});
+
+test('searchable single combobox filters options and commits an exact match', async ({
+  page,
+}) => {
+  await page.goto(stories.searchableSingle);
+  const control = page.locator('lu-select-combobox');
+  const input = control.locator('input[slot="input"]');
+  await expect(page.getByRole('combobox', { name: 'City' })).toBeVisible();
+  await expect(input).toHaveAttribute('role', 'combobox');
+  await input.fill('NEW');
+  await expect(page.locator('lu-select-option:not([hidden])')).toHaveCount(2);
+  await input.press('ArrowDown');
+  await input.press('Enter');
+  await expect(control).toHaveJSProperty('value', 'new-delhi');
+  await expect(input).toHaveValue('New Delhi');
+  await expect(input).toHaveAttribute('aria-expanded', 'false');
+  const submitted = await page
+    .locator('form')
+    .evaluate((form) => new FormData(form as HTMLFormElement).get('city'));
+  expect(submitted).toBe('new-delhi');
+  await expect(page.locator('lu-select-listbox:popover-open')).toHaveCount(0);
+});
+
+test('searchable multi combobox filters and toggles values without closing', async ({
+  page,
+}) => {
+  await page.goto(stories.searchableMultiple);
+  const control = page.locator('lu-select-combobox');
+  const input = control.locator('input[slot="input"]');
+  await expect(page.getByRole('combobox', { name: 'Fruits' })).toBeVisible();
+  await input.fill('pe');
+  await expect(page.locator('lu-select-option:not([hidden])')).toHaveCount(1);
+  await input.press('Enter');
+  await expect(control).toHaveJSProperty('values', ['pear']);
+  await expect(control.locator('[part="chip"]')).toHaveCount(1);
+  await expect(input).toBeFocused();
+  await expect(page.locator('lu-select-listbox:popover-open')).toBeVisible();
+  await input.fill('plu');
+  await input.press('Enter');
+  await expect(control).toHaveJSProperty('values', ['pear', 'plum']);
+  await expect(control.locator('[part="chip"]')).toHaveCount(2);
+  const submitted = await page
+    .locator('form')
+    .evaluate((form) => new FormData(form as HTMLFormElement).getAll('fruit'));
+  expect(submitted).toEqual(['pear', 'plum']);
+  await expect(page.locator('lu-select-listbox:popover-open')).toBeVisible();
 });
 
 test('disabled options cannot become selected by pointer', async ({ page }) => {
