@@ -15,13 +15,11 @@
     "moduleDetection": "force",
     "noEmit": true,
 
-    /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "plugins": [
+      {
+        "name": "ts-lit-plugin",
+      },
+    ],
   },
-  "include": ["src"]
+  "include": ["src"],
 }

@@ -5,4 +5,4 @@ The core philosophy of this library is:
 1. The basic unit is the webcomponent. It encapsulates the complexity of JavaScript, and you can use it if you don't want to write any of your own.
 2. All components in the library follow WCAG AA standards.
 3. This library provides you tools, and it is your choice how to use them. You can use it as a UI library, you can use it like ShadCN and modify them to fit your needs, you can use them in your templating language (with or without HTMX), or you can do whatever you set your mind to.
-4. I embrace humanism and the expression of the human spirit, including the suffering of trying to debug code at 2 AM. While I do use AI at other work, I do not use it here. If you feel like contributing, I recommend you try and fail then try and succeed so you can learn something.
+4. I embrace humanism and the expression of the human spirit in all of its forms. I discourage but do not outright ban AI.

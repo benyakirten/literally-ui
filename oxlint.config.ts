@@ -1,18 +1,18 @@
-import { defineConfig } from "oxlint";
+import { defineConfig } from 'oxlint';
 
 export default defineConfig({
   categories: {
-    correctness: "warn",
+    correctness: 'warn',
   },
   rules: {
-    eqeqeq: "error",
-    "import/no-cycle": "error",
-    "eslint/no-unused-vars": [
-      "error",
+    eqeqeq: 'error',
+    'import/no-cycle': 'error',
+    'eslint/no-unused-vars': [
+      'error',
       {
-        argsIgnorePattern: "^_",
-        varsIgnorePattern: "^_",
-        caughtErrorsIgnorePattern: "^_",
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
       },
     ],
   },
