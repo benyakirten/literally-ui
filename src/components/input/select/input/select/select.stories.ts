@@ -8,20 +8,71 @@ import '../../context';
 
 const meta: Meta = {
   title: 'Select',
-  component: 'lu-select',
+  component: 'lu-select-input',
+  parameters: { layout: 'centered' },
 };
 
 export const Default: StoryObj = {
-  render: () => {
-    return html`<lu-select-context>
-      <lu-select>
-        <lu-listbox>
-          <lu-select-option value="option-1">Option 1</lu-select-option>
-          <lu-select-option>Option 2</lu-select-option>
-        </lu-listbox>
-      </lu-select>
-    </lu-select-context>`;
-  },
+  render: () => html`<form>
+    <lu-select-context>
+      <label for="story-country">Country</label>
+      <lu-select-input
+        id="story-country"
+        name="country"
+        required
+      ></lu-select-input>
+      <lu-select-listbox>
+        <lu-select-option value="ca">Canada</lu-select-option>
+        <lu-select-option value="us">United States</lu-select-option>
+        <lu-select-option value="mx" disabled
+          >Mexico (unavailable)</lu-select-option
+        >
+      </lu-select-listbox>
+    </lu-select-context>
+  </form>`,
+};
+
+export const Multiple: StoryObj = {
+  render: () => html`<form>
+    <lu-select-context>
+      <label for="story-fruit">Fruits</label>
+      <lu-select-input id="story-fruit" name="fruit" multi></lu-select-input>
+      <lu-select-listbox>
+        <lu-select-option value="apple">Apple</lu-select-option>
+        <lu-select-option value="pear">Pear</lu-select-option>
+        <lu-select-option value="plum">Plum</lu-select-option>
+      </lu-select-listbox>
+    </lu-select-context>
+  </form>`,
+};
+
+export const LongList: StoryObj = {
+  render: () => html`<form>
+    <lu-select-context>
+      <label for="story-city">City</label>
+      <lu-select-input id="story-city" name="city"></lu-select-input>
+      <lu-select-listbox style="--lu-select-popup-max-height: 300px">
+        ${Array.from(
+          { length: 30 },
+          (_, index) => html`
+            <lu-select-option value="city-${index + 1}">
+              City ${index + 1}
+            </lu-select-option>
+          `,
+        )}
+      </lu-select-listbox>
+    </lu-select-context>
+  </form>`,
+};
+
+export const Empty: StoryObj = {
+  render: () => html`<form>
+    <lu-select-context>
+      <label for="story-empty">No available choices</label>
+      <lu-select-input id="story-empty" name="empty"></lu-select-input>
+      <lu-select-listbox></lu-select-listbox>
+    </lu-select-context>
+  </form>`,
 };
 
 export default meta;

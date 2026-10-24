@@ -1,169 +1,238 @@
 import { createContext, provide } from '@lit/context';
+import { html } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { LUElement, type Logger } from '../../base';
-import type { FaceMixinInterface } from '../face-mixin';
+import { LUElement } from '../../base';
+import styles from './context.styles';
 
-type SelectListboxRole = 'listbox' | 'tree';
+export interface SelectOption extends HTMLElement {
+  value: string;
+  displayValue: string;
+  disabled: boolean;
+  getDisplayValue(): string;
+}
 
-// TODO: Determine if this context is actually useful
-// This seems like a lot of things to keep in the context.
-// But if we use individual listeners and particular behavior
-// is a context a good way to handle state management?
-export type SelectContext = {
-  options: SelectOption[];
+export interface SelectSnapshot {
+  owner: object;
+  options: readonly SelectOption[];
+  values: readonly string[];
   open: boolean;
-  value: Set<string>;
-  highlighted: string;
-  popupId: string;
-  popupRole: SelectListboxRole;
-  logger: Logger;
   multi: boolean;
-  registerInput: (val: SelectInput) => void;
-  registerPopup: (val: HTMLElement) => void;
-  registerOption: (o: SelectOption) => void;
-  registerOptions: (opts: SelectOption[]) => void;
-  highlight: (val: string) => void;
-  select: (value: string) => void;
-  setOpen: (state: boolean) => void;
-};
+  activeId: string | null;
+  popupId: string | null;
+  input: HTMLElement | null;
+}
+
+export interface SelectContext extends SelectSnapshot {
+  registerInput(input: HTMLElement & { multi: boolean }): void;
+  unregisterInput(input: HTMLElement): void;
+  registerPopup(popup: HTMLElement): void;
+  unregisterPopup(popup: HTMLElement): void;
+  registerOption(option: SelectOption): void;
+  unregisterOption(option: SelectOption): void;
+  setValues(values: string[]): void;
+  setMulti(multi: boolean): void;
+  setOpen(open: boolean): void;
+  setActive(option: SelectOption | null): void;
+  commit(value: string): void;
+}
 
 export const selectContext = createContext<SelectContext>(
   Symbol.for('lu-select-context'),
 );
 
-export type SelectOption = HTMLElement & {
-  getValue: () => string;
-  getDisplayValue: () => string;
-};
-
-export type SelectInput = FaceMixinInterface & {
-  multi: boolean;
-};
-
-type ValidationLevel = 'lax' | 'log' | 'error';
-
-/**
- * This is a context that should wrap every select (input, popup and options).
- */
+/** Coordinates one input, one listbox, and its options. The input is the only form control. */
 @customElement('lu-select-context')
 export class LUSelectContext extends LUElement {
-  /**
-   * Validation level of the
-   */
-  @property({ type: String }) validation: ValidationLevel = 'log';
-
-  @state() private _isOpen = false;
-  @state() private _popupId = '';
-  @state() private _popupRole: 'listbox' | 'tree' = 'listbox';
-  @state() private _value = new Set<string>();
-  @state() private _highlighted: string = '';
+  static styles = styles;
+  @property({ type: String }) validation: 'lax' | 'log' | 'error' = 'log';
   @state() private _options: SelectOption[] = [];
-  @state() private _multi: boolean = false;
+  @state() private _values: string[] = [];
+  @state() private _open = false;
+  @state() private _multi = false;
+  @state() private _activeId: string | null = null;
+  @state() private _popupId: string | null = null;
+  private _input: HTMLElement | null = null;
+  private _popup: HTMLElement | null = null;
 
   @provide({ context: selectContext })
   @state()
-  contextValue: SelectContext = {
-    options: this._options,
-    open: this._isOpen,
-    value: this._value,
-    highlighted: this._highlighted,
-    popupId: this._popupId,
-    popupRole: this._popupRole,
-    logger: this.logger,
-    multi: this._multi,
-    registerInput: (el: SelectInput) => this._handleRegisterInput(el),
-    registerPopup: (el: HTMLElement) => this._handleRegisterPopup(el),
-    registerOption: (o: SelectOption) => this._handleRegisterOption(o),
-    registerOptions: (opts: SelectOption[]) =>
-      this._handleRegisterOptions(opts),
-    highlight: (value: string) => this._handleHighlight(value),
-    select: (value: string) => this._handleSelectOption(value),
-    setOpen: (state: boolean) => this._setOpen(state),
-  };
+  contextValue: SelectContext = this._snapshot();
 
-  private _handleRegisterInput(el: SelectInput) {
-    this._multi = el.multi;
+  private _snapshot(): SelectContext {
+    return {
+      owner: this,
+      options: this._options,
+      values: this._values,
+      open: this._open,
+      multi: this._multi,
+      activeId: this._activeId,
+      popupId: this._popupId,
+      input: this._input,
+      registerInput: (input) => this._registerInput(input),
+      unregisterInput: (input) => this._unregisterInput(input),
+      registerPopup: (popup) => this._registerPopup(popup),
+      unregisterPopup: (popup) => this._unregisterPopup(popup),
+      registerOption: (option) => this._registerOption(option),
+      unregisterOption: (option) => this._unregisterOption(option),
+      setValues: (values) => this._setValues(values),
+      setMulti: (multi) => this._setMulti(multi),
+      setOpen: (open) => this._setOpen(open),
+      setActive: (option) => this._setActive(option),
+      commit: (value) => this._commit(value),
+    };
   }
 
-  private _handleRegisterOptions(opts: SelectOption[]) {
-    if (this.validation !== 'lax') {
-      const seen = new Set<string>();
-      const duplicated: string[] = [];
-      for (const opt of opts) {
-        if (seen.has(opt.getValue())) {
-          if (this.validation === 'error') {
-            throw Error(
-              `Cannot register ${opt.getValue()}; already exists as option`,
-            );
-          } else {
-            duplicated.push(opt.getValue());
-          }
-        }
-
-        this.logger.warn(
-          `${duplicated.length} options with identical values detected: ${duplicated}`,
-        );
-      }
-    }
-
-    this._options = opts;
+  private _publish() {
+    this._options = [...this._options].sort((a, b) => {
+      const relation = a.compareDocumentPosition(b);
+      return relation & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
+    });
+    this.contextValue = this._snapshot();
   }
 
-  private _handleRegisterOption(o: SelectOption) {
-    if (this.validation !== 'lax') {
-      if (this._options.some((opt) => opt.getValue === o.getValue)) {
-        if (this.validation === 'log') {
-          this.logger.warn(`${o.getValue()}; already exists as option`, o);
-        } else {
-          throw Error(
-            `Cannot register ${o.getValue()}; already exists as option`,
-          );
-        }
-      }
-    }
-    this._options.push(o);
+  private _diagnose(message: string, element?: HTMLElement) {
+    if (this.validation === 'error') throw new Error(message);
+    if (this.validation === 'log') this.logger.warn(message, element);
   }
 
-  private _isOption(value: string): boolean {
-    return this._options.some((opt) => opt.getValue() === value);
+  private _sameTree(element: HTMLElement) {
+    return element.getRootNode() === this.getRootNode();
   }
 
-  private _handleSelectOption(value: string) {
-    if (!this._isOption(value)) {
+  private _registerInput(input: HTMLElement & { multi: boolean }) {
+    if (!this._sameTree(input)) {
+      this._diagnose(
+        'Select input must share a DOM tree with its context',
+        input,
+      );
       return;
     }
-
-    if (this._multi && this._value.has(value)) {
-      this._value.delete(value);
+    if (this._input && this._input !== input) {
+      this._diagnose('A select context supports one input', input);
       return;
     }
-
-    this._value.add(value);
+    this._input = input;
+    this._multi = input.multi;
+    if (!this._multi) this._values = this._values.slice(0, 1);
+    this._publish();
   }
 
-  private _setOpen(state: boolean) {
-    this._isOpen = state;
+  private _unregisterInput(input: HTMLElement) {
+    if (this._input !== input) return;
+    this._input = null;
+    this._open = false;
+    this._publish();
   }
 
-  private _handleHighlight(value: string) {
-    if (!this._isOption(value)) {
+  private _registerPopup(popup: HTMLElement) {
+    if (!this._sameTree(popup)) {
+      this._diagnose(
+        'Select listbox must share a DOM tree with its context',
+        popup,
+      );
       return;
     }
-    this._highlighted = value;
+    if (this._popup && this._popup !== popup) {
+      this._diagnose('A select context supports one listbox', popup);
+      return;
+    }
+    this._popup = popup;
+    this._popupId = popup.id;
+    this._publish();
   }
 
-  private _handleRegisterPopup(el: HTMLElement) {
-    const role = el.getAttribute('role');
-    if (role !== 'listbox' && role !== 'tree') {
-      throw new Error('LU Select only supports listbox and tree role');
-    }
+  private _unregisterPopup(popup: HTMLElement) {
+    if (this._popup !== popup) return;
+    this._popup = null;
+    this._popupId = null;
+    this._open = false;
+    this._publish();
+  }
 
-    const id = el.getAttribute('id');
-    if (!id) {
-      throw new Error('LU Select Popup must have an id');
+  private _registerOption(option: SelectOption) {
+    if (!this._sameTree(option)) {
+      this._diagnose(
+        'Select option must share a DOM tree with its context',
+        option,
+      );
+      return;
     }
+    if (!option.hasAttribute('value') && option.value === '')
+      this._diagnose('Select options require an explicit value', option);
+    const duplicate = this._options.find(
+      (existing) => existing !== option && existing.value === option.value,
+    );
+    if (duplicate) {
+      this._diagnose(`Duplicate select option value: ${option.value}`, option);
+      return;
+    }
+    if (!this._options.includes(option))
+      this._options = [...this._options, option];
+    if (option.disabled && this._activeId === option.id) this._activeId = null;
+    this._publish();
+  }
 
-    this._popupId = id;
-    this._popupRole = role;
+  private _unregisterOption(option: SelectOption) {
+    this._options = this._options.filter((item) => item !== option);
+    if (this._activeId === option.id) this._activeId = null;
+    this._publish();
+  }
+
+  private _setValues(values: string[]) {
+    const next = [...new Set(this._multi ? values : values.slice(0, 1))];
+    if (
+      next.length === this._values.length &&
+      next.every((value, index) => value === this._values[index])
+    )
+      return;
+    this._values = next;
+    this._publish();
+  }
+
+  private _setMulti(multi: boolean) {
+    if (this._multi === multi) return;
+    this._multi = multi;
+    if (!multi) this._values = this._values.slice(0, 1);
+    this._open = false;
+    this._activeId = null;
+    this._publish();
+  }
+
+  private _setOpen(open: boolean) {
+    const next = Boolean(
+      open &&
+      this._input &&
+      this._popup &&
+      !(this._input as HTMLInputElement).disabled,
+    );
+    const activeId = next ? this._activeId : null;
+    if (next === this._open && activeId === this._activeId) return;
+    this._open = next;
+    this._activeId = activeId;
+    this._publish();
+  }
+
+  private _setActive(option: SelectOption | null) {
+    const next = option && !option.disabled ? option.id : null;
+    if (this._activeId === next) return;
+    this._activeId = next;
+    this._publish();
+  }
+
+  private _commit(value: string) {
+    const option = this._options.find(
+      (item) => item.value === value && !item.disabled,
+    );
+    if (!option) return;
+    const next = this._multi
+      ? this._values.includes(value)
+        ? this._values.filter((item) => item !== value)
+        : [...this._values, value]
+      : [value];
+    this._setValues(next);
+  }
+
+  render() {
+    return html`<slot></slot>`;
   }
 }
