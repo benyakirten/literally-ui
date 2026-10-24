@@ -56,9 +56,7 @@ export class LUSelectInput extends LUFaceElement() {
   protected updated(changed: PropertyValues<this>) {
     super.updated(changed);
 
-    if (changed.has('multi')) {
-      this.setAttribute('role', this.multi ? 'button' : 'combobox');
-    }
+    this.setAttribute('role', this.multi ? 'button' : 'combobox');
 
     this.setAttribute('aria-expanded', String(this._ctx?.open ?? false));
 
@@ -208,12 +206,16 @@ export class LUSelectInput extends LUFaceElement() {
     const labels = Array.from(
       this.internals.labels,
       (label) => label as HTMLLabelElement,
-    ).map((l) => l.id || `lu-select-label-${crypto.randomUUID()}`);
-    if (!labels.length) {
-      return;
-    }
+    );
+    if (!labels.length) return;
 
-    this.setAttribute('aria-labelledby', labels.join(' '));
+    for (const label of labels) {
+      if (!label.id) label.id = `lu-select-label-${crypto.randomUUID()}`;
+    }
+    this.setAttribute(
+      'aria-labelledby',
+      labels.map((label) => label.id).join(' '),
+    );
   }
 
   private _updateValidity() {
@@ -373,6 +375,11 @@ export class LUSelectInput extends LUFaceElement() {
   private _onKeydown = (event: KeyboardEvent) => {
     if (this.disabled || this._fieldsetDisabled || event.isComposing) return;
     if (!this._ctx?.open) {
+      if (this.multi && event.key === 'Backspace' && this._values.length) {
+        event.preventDefault();
+        this._writeValues(this._values.slice(0, -1), true);
+        return;
+      }
       if (
         ['Enter', ' ', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(
           event.key,
@@ -447,6 +454,15 @@ export class LUSelectInput extends LUFaceElement() {
     super.disconnectedCallback();
   }
 
+  private _removeChip = (event: MouseEvent, value: string) => {
+    event.stopPropagation();
+    if (this.disabled || this._fieldsetDisabled) return;
+    this._writeValues(
+      this._values.filter((item) => item !== value),
+      true,
+    );
+  };
+
   private _onClick = () => {
     if (this.disabled || this._fieldsetDisabled) return;
     if (this._ctx?.open) this._close(false, this.multi);
@@ -463,8 +479,30 @@ export class LUSelectInput extends LUFaceElement() {
       ? selected.map((option) => option.getDisplayValue()).join(', ')
       : selected[0]?.getDisplayValue();
 
-    return html`<span part="value" class=${hasSelection ? '' : 'placeholder'}
-        >${hasSelection ? label : this.placeholder}</span
+    return html`<span
+        part="value"
+        class=${hasSelection ? '' : 'placeholder'}
+        aria-live=${this.multi ? 'polite' : 'off'}
+        >${
+          this.multi && hasSelection
+            ? selected.map(
+                (option) => html`<span
+                  part="chip"
+                  aria-label=${option.getDisplayValue()}
+                  ><span>${option.getDisplayValue()}</span
+                  ><span
+                    part="chip-remove"
+                    aria-hidden="true"
+                    @click=${(event: MouseEvent) =>
+                      this._removeChip(event, option.value)}
+                    >×</span
+                  ></span
+                >`,
+              )
+            : hasSelection
+              ? label
+              : this.placeholder
+        }</span
       ><span part="indicator" aria-hidden="true">▾</span> <slot hidden></slot>`;
   }
 }

@@ -16,6 +16,10 @@ test('single select exposes combobox semantics and commits only on confirmation'
   await input.focus();
   await input.press('ArrowDown');
   await expect(input).toHaveAttribute('aria-expanded', 'true');
+  await expect(input.locator('[part="indicator"]')).not.toHaveCSS(
+    'transform',
+    'none',
+  );
   await input.press('ArrowDown');
   await input.press('Escape');
   await expect(input).toHaveJSProperty('value', '');
@@ -39,10 +43,33 @@ test('multiple select toggles options and submits repeated form entries', async 
   await listbox.press('ArrowDown');
   await listbox.press('Space');
   await expect(input).toHaveJSProperty('values', ['apple', 'pear']);
+  await expect(input.locator('[part="chip"]')).toHaveCount(2);
   const submitted = await page
     .locator('form')
     .evaluate((form) => new FormData(form).getAll('fruit'));
   expect(submitted).toEqual(['apple', 'pear']);
+});
+
+test('multiple select toggles options by pointer without closing', async ({
+  page,
+}) => {
+  await page.goto(stories.multiple);
+  const input = page.locator('lu-select-input');
+  await input.click();
+  const apple = page.locator('lu-select-option[value="apple"]');
+  const pear = page.locator('lu-select-option[value="pear"]');
+  await apple.click();
+  await expect(apple).toHaveAttribute('aria-selected', 'true');
+  await expect(input).toHaveAttribute('aria-expanded', 'true');
+  await pear.click();
+  await expect(pear).toHaveAttribute('aria-selected', 'true');
+  await expect(input).toHaveJSProperty('values', ['apple', 'pear']);
+  await expect(input).toHaveAttribute('aria-expanded', 'true');
+  await expect(input.locator('[part="chip"]')).toHaveCount(2);
+  await input.locator('[part="chip-remove"]').first().click();
+  await expect(input).toHaveJSProperty('values', ['pear']);
+  await expect(input.locator('[part="chip"]')).toHaveCount(1);
+  await expect(input).toHaveAttribute('aria-expanded', 'true');
 });
 
 test('disabled options cannot become selected by pointer', async ({ page }) => {
