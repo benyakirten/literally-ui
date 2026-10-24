@@ -425,7 +425,7 @@ export class LUSelectInput extends LUFaceElement() {
     } else if (event.key === 'End') {
       event.preventDefault();
       this._activate(this._enabledOptions().at(-1));
-    } else if (this.multi && event.key === ' ') {
+    } else if (this.multi && (event.key === ' ' || event.key === 'Enter')) {
       event.preventDefault();
       const active = this._ctx.options.find(
         (option) => option.id === this._ctx?.activeId,

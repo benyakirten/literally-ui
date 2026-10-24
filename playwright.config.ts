@@ -26,7 +26,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in browser fixtures. */
-    baseURL: 'http://127.0.0.1:4173',
+    baseURL: process.env.PLAYWRIGHT_STORYBOOK_URL ?? 'http://127.0.0.1:4173',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -70,10 +70,12 @@ export default defineConfig({
     // },
   ],
 
-  webServer: {
-    command:
-      'pnpm exec storybook dev --host 127.0.0.1 --port 4173 --exact-port --ci --quiet --no-version-updates',
-    url: 'http://127.0.0.1:4173',
-    reuseExistingServer: false,
-  },
+  webServer: process.env.PLAYWRIGHT_STORYBOOK_URL
+    ? undefined
+    : {
+        command:
+          'pnpm exec storybook dev --host 127.0.0.1 --port 4173 --exact-port --ci --quiet --no-version-updates',
+        url: 'http://127.0.0.1:4173',
+        reuseExistingServer: false,
+      },
 });

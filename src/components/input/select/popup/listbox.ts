@@ -183,10 +183,6 @@ export class LUSelectListbox extends LitElement {
       event.preventDefault();
       this._ctx.setOpen(false);
       this._input()?.focus();
-    } else if (event.key === 'Enter' && this._ctx.multi) {
-      event.preventDefault();
-      this._ctx.setOpen(false);
-      this._input()?.focus();
     } else if (event.key === 'Tab' && this._ctx.multi) {
       this._input()?.focus({ preventScroll: true });
       this._ctx.setOpen(false);
@@ -207,7 +203,10 @@ export class LUSelectListbox extends LitElement {
           .startsWith(this._typeBuffer),
       );
       if (match) this._ctx.setActive(match);
-    } else if (event.key === ' ' && this._ctx.multi) {
+    } else if (
+      (event.key === ' ' || event.key === 'Enter') &&
+      this._ctx.multi
+    ) {
       event.preventDefault();
       const active = options.find((item) => item.id === this._ctx?.activeId);
       if (active) {

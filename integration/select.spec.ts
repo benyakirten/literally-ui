@@ -50,6 +50,43 @@ test('multiple select toggles options and submits repeated form entries', async 
   expect(submitted).toEqual(['apple', 'pear']);
 });
 
+for (const openKey of ['Enter', 'Space', 'ArrowDown']) {
+  for (const selectKey of ['Enter', 'Space']) {
+    test(`multiple select opens with ${openKey} and toggles with ${selectKey} using only the keyboard`, async ({
+      page,
+    }) => {
+      await page.goto(stories.multiple);
+      const input = page.locator('lu-select-input');
+      const listbox = page.locator('lu-select-listbox');
+      await expect(input).toBeVisible();
+      await page.keyboard.press('Tab');
+      await expect(input).toBeFocused();
+      await page.keyboard.press(openKey);
+      await expect(listbox).toBeFocused();
+      await page.keyboard.press(selectKey);
+      await expect(input).toHaveJSProperty('values', ['apple']);
+      await expect(input.locator('[part="chip"]')).toHaveCount(1);
+      await expect(
+        page.locator('lu-select-listbox:popover-open'),
+      ).toBeVisible();
+      await expect(listbox).toBeFocused();
+      await page.keyboard.press('ArrowDown');
+      await page.keyboard.press(selectKey);
+      await expect(input).toHaveJSProperty('values', ['apple', 'pear']);
+      await expect(input.locator('[part="chip"]')).toHaveCount(2);
+      await expect(
+        page.locator('lu-select-listbox:popover-open'),
+      ).toBeVisible();
+      await page.keyboard.press(selectKey);
+      await expect(input).toHaveJSProperty('values', ['apple']);
+      await expect(listbox).toBeFocused();
+      await page.keyboard.press('Escape');
+      await expect(input).toBeFocused();
+      await expect(input).toHaveAttribute('aria-expanded', 'false');
+    });
+  }
+}
+
 test('multiple select toggles options by pointer without closing', async ({
   page,
 }) => {
@@ -70,6 +107,34 @@ test('multiple select toggles options by pointer without closing', async ({
   await expect(input).toHaveJSProperty('values', ['pear']);
   await expect(input.locator('[part="chip"]')).toHaveCount(1);
   await expect(input).toHaveAttribute('aria-expanded', 'true');
+});
+
+test('multiple story adds all options through the Storybook canvas', async ({
+  page,
+}, testInfo) => {
+  await page.goto('/?path=/story/select--multiple');
+  const canvas = page.frameLocator('#storybook-preview-iframe');
+  const input = canvas.locator('lu-select-input');
+  await expect(input).toBeVisible();
+  await input.click();
+  const values: string[] = [];
+  for (const value of ['apple', 'pear', 'plum']) {
+    const option = canvas.locator(`lu-select-option[value="${value}"]`);
+    await expect(option).toBeVisible();
+    const box = await option.boundingBox();
+    if (!box) throw new Error(`Option ${value} has no clickable bounding box`);
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    values.push(value);
+    await expect(input).toHaveJSProperty('values', values);
+    await expect(input.locator('[part="chip"]')).toHaveCount(values.length);
+    for (const chip of await input.locator('[part="chip"]').all()) {
+      await expect(chip).toBeVisible();
+    }
+    await expect(
+      canvas.locator('lu-select-listbox:popover-open'),
+    ).toBeVisible();
+  }
+  await page.screenshot({ path: testInfo.outputPath('multiple-selected.png') });
 });
 
 test('disabled options cannot become selected by pointer', async ({ page }) => {

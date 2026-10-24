@@ -200,7 +200,7 @@ Pointer hover can activate an enabled option but cannot select it. Prevent point
 
 | Input               | Trigger closed                      | Listbox focused/open                                                                                                                       |
 | ------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Enter / Space       | Open and focus listbox              | Space toggles active; Enter closes and returns focus to trigger                                                                            |
+| Enter / Space       | Open and focus listbox              | Enter or Space toggles the active option and keeps the listbox open                                                                        |
 | ArrowDown / ArrowUp | Open and focus listbox              | Move active without selecting                                                                                                              |
 | Home / End          | Open at first / last enabled option | Move to first / last enabled option                                                                                                        |
 | Escape              | No action                           | Close and return focus to trigger; keep toggles                                                                                            |
@@ -359,7 +359,7 @@ Add focused `integration/select.spec.ts` tests and fixtures. Avoid unrelated rew
 
 - Test each table's opening/navigation/commit/cancel behavior, including real `KeyboardEvent.key` names.
 - Single highlighting does not change the value; Escape discards preview; Tab commits and moves focus naturally.
-- Multi navigation does not select; Space toggles; Enter/Escape close with expected focus; Tab/Shift+Tab traverse relative to trigger without trapping.
+- Multi navigation does not select; Enter/Space toggle and keep the popup open; Escape closes with expected focus; Tab/Shift+Tab traverse relative to trigger without trapping.
 - Multi Ctrl/Cmd+A acts only while the listbox is focused and emits one event pair per effective bulk change.
 - Typeahead supports repeated letters, multiple characters, timeout, disabled skipping, and no-match cases.
 - Pointer option selection/toggling, hover, scrollbar use, outside click, and focus-out dismissal behave correctly without stolen focus.
